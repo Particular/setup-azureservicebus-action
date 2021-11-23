@@ -13,11 +13,11 @@ $packageTag = "Package=$tagName"
 $runnerOsTag = "RunnerOS=$($Env:RUNNER_OS)"
 $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
 
-echo "Creating Azure Service Bus namespace $name (This can take awhile.)"
-$details = az servicebus namespace create --resource-group GitHubActions-RG --name $name --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
+echo "Creating Azure Service Bus namespace $ASBName (This can take awhile.)"
+$details = az servicebus namespace create --resource-group GitHubActions-RG --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
 
 echo "Getting connection string"
-$keys = az servicebus namespace authorization-rule keys list --resource-group GitHubActions-RG --namespace-name $name --name RootManageSharedAccessKey | ConvertFrom-Json
+$keys = az servicebus namespace authorization-rule keys list --resource-group GitHubActions-RG --namespace-name $ASBName --name RootManageSharedAccessKey | ConvertFrom-Json
 $connectString = $keys.primaryConnectionString
 echo "::add-mask::$connectString"
 
