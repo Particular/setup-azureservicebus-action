@@ -14,4 +14,4 @@ This action handles the setup and teardown of an Azure Service Bus namespace for
 
 ## License
 
-The scripts and documentation in this project are released under the [MIT License](LICENSE.md).
+The scripts and documentation in this project are released under the [MIT License](LICENSE).
