@@ -36,3 +36,7 @@ jobs:
           if ( $Env:ASBConnectionString -le 0 ) {
             throw "Environment variable 'ASBConnectionString' not set."
           }
+          echo "ASBConnectionString_Restricted = $($Env:ASBConnectionString_Restricted)"
+          if ( $Env:ASBConnectionString_Restricted -le 0 ) {
+            throw "Environment variable 'ASBConnectionString_Restricted' not set."
+          }
