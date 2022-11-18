@@ -26,7 +26,7 @@ az servicebus namespace authorization-rule create --resource-group GitHubActions
 $noManageKeys = az servicebus namespace authorization-rule keys list --resource-group GitHubActions-RG --namespace-name $ASBName --name RootNoManageSharedAccessKey | ConvertFrom-Json
 $noManageConnectString = $noManageKeys.primaryConnectionString
 echo "::add-mask::$noManageConnectString"
-$noManageConnectionStringName = "$connectionStringName_Restricted"
+$noManageConnectionStringName = "$($connectionStringName)_Restricted"
 
 echo "$connectionStringName=$connectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
 echo "$noManageConnectionStringName=$noManageConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
