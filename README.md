@@ -17,3 +17,15 @@ The setup action also automatically propagates an environment variable called `E
 ## License
 
 The scripts and documentation in this project are released under the [MIT License](LICENSE).
+
+## Development
+
+Open the folder in Visual Studio Code. If you don't already have them, you will be prompted to install remote development extensions. After installing them, and re-opening the folder in a container, do the following:
+
+Run the npm installation
+
+```bash
+npm install
+```
+
+When changing `index.js`, either run `npm run dev` beforehand, which will watch the file for changes and automatically compile it, or run `npm run prepare` afterwards.
