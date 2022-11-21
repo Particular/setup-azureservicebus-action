@@ -21,4 +21,12 @@ $keys = az servicebus namespace authorization-rule keys list --resource-group Gi
 $connectString = $keys.primaryConnectionString
 echo "::add-mask::$connectString"
 
+echo "Getting connection string without manage rights"
+az servicebus namespace authorization-rule create --resource-group GitHubActions-RG --namespace-name $ASBName --name RootNoManageSharedAccessKey --rights Send Listen
+$noManageKeys = az servicebus namespace authorization-rule keys list --resource-group GitHubActions-RG --namespace-name $ASBName --name RootNoManageSharedAccessKey | ConvertFrom-Json
+$noManageConnectString = $noManageKeys.primaryConnectionString
+echo "::add-mask::$noManageConnectString"
+$noManageConnectionStringName = "$($connectionStringName)_Restricted"
+
 echo "$connectionStringName=$connectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+echo "$noManageConnectionStringName=$noManageConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append

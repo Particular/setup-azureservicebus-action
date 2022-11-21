@@ -8,6 +8,6 @@ inputs:
     description: The name of the component Azure Service Bus is being used for. The Service Bus namespace is tagged with this value.
     required: true
 runs:
-  using: node12
+  using: node16
   main: dist/index.js
   post: dist/index.js
