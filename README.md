@@ -22,6 +22,13 @@ The scripts and documentation in this project are released under the [MIT Licens
 
 Open the folder in Visual Studio Code. If you don't already have them, you will be prompted to install remote development extensions. After installing them, and re-opening the folder in a container, do the following:
 
+Log into Azure
+
+```bash
+az login
+az account set --subscription SUBSCRIPTION_ID
+```
+
 Run the npm installation
 
 ```bash
