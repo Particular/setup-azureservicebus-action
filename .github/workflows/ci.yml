@@ -40,3 +40,7 @@ jobs:
           if ( $Env:ASBConnectionString_Restricted -le 0 ) {
             throw "Environment variable 'ASBConnectionString_Restricted' not set."
           }
+          echo "AzureServiceBusManagedIdentityClientId = $($Env:AzureServiceBusManagedIdentityClientId)"
+          if ( $Env:AzureServiceBusManagedIdentityClientId -le 0 ) {
+            throw "Environment variable 'AzureServiceBusManagedIdentityClientId' not set."
+          }
