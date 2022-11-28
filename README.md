@@ -30,3 +30,22 @@ az account set --subscription SUBSCRIPTION_ID
 ```
 
 When changing `index.js`, either run `npm run dev` beforehand, which will watch the file for changes and automatically compile it, or run `npm run prepare` afterwards.
+
+## Testing
+
+### With PowerShell
+
+To test the setup action set the required environment variables and execute `setup.ps1` with the desired parameters.
+
+```bash
+$Env:RESOURCE_GROUP_OVERRIDE=yourResourceGroup
+$Env:REGION_OVERRIDE=yourRegion
+.\setup.ps1 -ASBName psw-asb-1 -ConnectionStringName AzureServiceBus_ConnectionString -Tag setup-azureservicebus-action
+```
+
+To test the cleanup action set the required environment variables and execute `cleanup.ps1` with the desired parameters.
+
+```bash
+$Env:RESOURCE_GROUP_OVERRIDE=yourResourceGroup
+.\cleanup.ps1 -ASBName psw-asb-1
+```
