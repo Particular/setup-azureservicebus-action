@@ -19,9 +19,20 @@ Write-Output "Actions agent running in Azure region $region"
 $packageTag = "Package=$tagName"
 $runnerOsTag = "RunnerOS=$($Env:RUNNER_OS)"
 $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
+$identityName ="$($ASBName)-identity"
 
-Write-Output "Creating Azure Service Bus namespace $ASBName (This can take awhile.)"
+Write-Output "Creating a managed identity $identityName for $ASBName"
+az identity create --resource-group $resourceGroup --name $identityName | Out-Null
+$identityClientId = az identity show --resource-group $resourceGroup --name $identityName --query id -o clientId
+$identityPrincipalId = az identity show --resource-group $resourceGroup --name $identityName --query principalId -o tsv
+Write-Output "::add-mask::$identityClientId"
+Write-Output "::add-mask::$identityPrincipalId"
+
+Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a while.)"
 $details = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
+
+Write-Output "Assigning managed identity $identityName to $ASBName"
+az role assignment create --role "Azure Service Bus Data Owner" --assignee-principal-type ServicePrincipal --assignee-object-id $identityPrincipalId --scope $details.id
 
 Write-Output "Getting connection string"
 $keys = az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $ASBName --name RootManageSharedAccessKey | ConvertFrom-Json
@@ -37,3 +48,4 @@ $noManageConnectionStringName = "$($connectionStringName)_Restricted"
 
 Write-Output "$connectionStringName=$connectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
 Write-Output "$noManageConnectionStringName=$noManageConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+Write-Output "AzureServiceBusManagedIdentityClientId=$identityClientId" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
