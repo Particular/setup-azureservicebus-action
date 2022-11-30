@@ -19,9 +19,9 @@ jobs:
         os: [ windows-2019, ubuntu-20.04 ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v2.5.0
       - name: Azure login
-        uses: azure/login@v1.3.0
+        uses: azure/login@v1.4.7
         with:
           creds: ${{ secrets.AZURE_ACI_CREDENTIALS }}
       - name: Run
@@ -39,4 +39,8 @@ jobs:
           echo "ASBConnectionString_Restricted = $($Env:ASBConnectionString_Restricted)"
           if ( $Env:ASBConnectionString_Restricted -le 0 ) {
             throw "Environment variable 'ASBConnectionString_Restricted' not set."
+          }
+          echo "AzureServiceBusManagedIdentityClientId = $($Env:AzureServiceBusManagedIdentityClientId)"
+          if ( $Env:AzureServiceBusManagedIdentityClientId -le 0 ) {
+            throw "Environment variable 'AzureServiceBusManagedIdentityClientId' not set."
           }
