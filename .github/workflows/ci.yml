@@ -16,7 +16,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-2022, ubuntu-22.04 ]
         include:
           - os: windows-2022
             os-name: Windows
