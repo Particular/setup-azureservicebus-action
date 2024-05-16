@@ -19,18 +19,9 @@ Write-Output "Actions agent running in Azure region $region"
 $packageTag = "Package=$tagName"
 $runnerOsTag = "RunnerOS=$($Env:RUNNER_OS)"
 $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
-$identityName ="$($ASBName)-identity"
-
-Write-Output "Creating a managed identity $identityName for $ASBName"
-$identity = az identity create --resource-group $resourceGroup --name $identityName | ConvertFrom-Json
-Write-Output "::add-mask::$($identity.clientId)"
-Write-Output "::add-mask::$($identity.principalId)"
 
 Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a while.)"
 $details = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
-
-Write-Output "Assigning managed identity $identityName to $ASBName"
-az role assignment create --role "Azure Service Bus Data Owner" --assignee-principal-type ServicePrincipal --assignee-object-id $identity.principalId --scope $details.id
 
 Write-Output "Getting connection string"
 $keys = az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $ASBName --name RootManageSharedAccessKey | ConvertFrom-Json
