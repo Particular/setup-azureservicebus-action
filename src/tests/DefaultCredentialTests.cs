@@ -16,7 +16,7 @@ public class DefaultCredentialTests
         
         var properties = ServiceBusConnectionStringProperties.Parse(connectionString);      
        
-        var client = new ServiceBusAdministrationClient(properties.FullyQualifiedNamespace, new DefaultAzureCredential(new DefaultAzureCredentialOptions()));
+        var client = new ServiceBusAdministrationClient(properties.FullyQualifiedNamespace, new DefaultAzureCredential());
         await client.CreateQueueAsync("testqueuedefault");
     }
 }
