@@ -31,4 +31,16 @@ public class DefaultCredentialTests
         var sender = client.CreateSender("testqueuedefault");
         await sender.SendMessageAsync(new ServiceBusMessage(nameof(Should_have_send_claims)));
     }
+    
+    [Test]
+    public async Task Should_have_receive_claims()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("ASBConnectionString");
+        
+        var properties = ServiceBusConnectionStringProperties.Parse(connectionString);
+
+        await using var client = new ServiceBusClient(properties.FullyQualifiedNamespace, new DefaultAzureCredential());
+        var receiver = client.CreateReceiver("testqueuedefault");
+        await receiver.ReceiveMessageAsync(TimeSpan.FromMilliseconds(500));
+    }
 }
