@@ -9,6 +9,7 @@ This action handles the setup and teardown of an Azure Service Bus namespace for
         uses: Particular/setup-azureservicebus-action@v1.0.0
         with:
           connection-string-name: EnvVarToCreateWithConnectionString
+          azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
           tag: PackageName
 ```
 

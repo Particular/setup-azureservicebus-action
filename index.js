@@ -14,6 +14,7 @@ let isPost = core.getState('IsPost');
 core.saveState('IsPost', true);
 
 let connectionStringName = core.getInput('connection-string-name');
+let azureCredentials = core.getInput('azure-credentials');
 let tagName = core.getInput('tag');
 
 async function run() {
@@ -33,7 +34,8 @@ async function run() {
                 '-File', setupPs1,
                 '-ASBName', ASBName,
                 '-connectionStringName', connectionStringName,
-                '-tagName', tagName
+                '-tagName', tagName,
+                '-azureCredentials', azureCredentials
             ]);
 
         } else { // Cleanup
