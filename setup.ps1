@@ -27,7 +27,7 @@ Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a whi
 $details = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
 
 Write-Output "Assigning roles to Azure Service Bus namespace $ASBName"
-az role assignment create --assignee $credentials.principalId --role "Azure Service Bus Data Owner" --scope "/subscriptions/$($credentials.subscriptionId)/resourceGroups/$($resourceGroup)/providers/{providerName}/{resourceType}/{resourceSubType}/{resourceName}"
+az role assignment create --assignee $credentials.principalId --role "Azure Service Bus Data Owner" --scope $details.id
 
 Write-Output "Getting connection string"
 $keys = az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $ASBName --name RootManageSharedAccessKey | ConvertFrom-Json
