@@ -41,7 +41,13 @@ To test the setup action set the required environment variables and execute `set
 ```bash
 $Env:RESOURCE_GROUP_OVERRIDE=yourResourceGroup
 $Env:REGION_OVERRIDE=yourRegion
-.\setup.ps1 -ASBName psw-asb-1 -ConnectionStringName AzureServiceBus_ConnectionString -Tag setup-azureservicebus-action
+# Replace the principal ID with the appropriate principal ID that you used to log into AZ CLI
+$azureCredentials = @"
+{
+     "principalId": "a28b36b8-2243-494e-9028-0e94df179913",
+   }
+"@
+.\setup.ps1 -ASBName psw-asb-1 -ConnectionStringName AzureServiceBus_ConnectionString -Tag setup-azureservicebus-action -AzureCredentials $azureCredentials
 ```
 
 To test the cleanup action set the required environment variables and execute `cleanup.ps1` with the desired parameters.
