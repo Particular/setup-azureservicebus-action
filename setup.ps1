@@ -1,8 +1,11 @@
 param (
     [string]$ASBName,
     [string]$connectionStringName,
-    [string]$tagName
+    [string]$tagName,
+    [string]$azureCredentials
 )
+
+$credentials = $azureCredentials | ConvertFrom-Json
 
 $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
 
@@ -23,13 +26,16 @@ $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
 Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a while.)"
 $details = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
 
+Write-Output "Assigning roles to Azure Service Bus namespace $ASBName"
+az role assignment create --assignee $credentials.principalId --role "Azure Service Bus Data Owner" --scope $details.id > $null
+
 Write-Output "Getting connection string"
 $keys = az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $ASBName --name RootManageSharedAccessKey | ConvertFrom-Json
 $connectString = $keys.primaryConnectionString
 Write-Output "::add-mask::$connectString"
 
 Write-Output "Getting connection string without manage rights"
-az servicebus namespace authorization-rule create --resource-group $resourceGroup --namespace-name $ASBName --name RootNoManageSharedAccessKey --rights Send Listen
+az servicebus namespace authorization-rule create --resource-group $resourceGroup --namespace-name $ASBName --name RootNoManageSharedAccessKey --rights Send Listen > $null
 $noManageKeys = az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $ASBName --name RootNoManageSharedAccessKey | ConvertFrom-Json
 $noManageConnectString = $noManageKeys.primaryConnectionString
 Write-Output "::add-mask::$noManageConnectString"
