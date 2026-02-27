@@ -6,10 +6,30 @@ inputs:
     required: true
   azure-credentials:
     description: The JSON blob containing the Azure login credentials. Required setting up the RBAC assignments.
-    required: true
+    required: false
   tag:
     description: The name of the component Azure Service Bus is being used for. The Service Bus namespace is tagged with this value.
-    required: true
+    required: false
+  use-emulator:
+    description: If true, uses Azure Service Bus Emulator via Docker Compose instead of provisioning Azure resources.
+    required: false
+    default: 'false'
+  emulator-host:
+    description: Hostname used to build emulator connection strings.
+    required: false
+    default: localhost
+  emulator-amqp-port:
+    description: Public AMQP port used by the emulator runtime endpoint.
+    required: false
+    default: '5672'
+  emulator-http-port:
+    description: Public HTTP management port used by the emulator admin endpoint.
+    required: false
+    default: '5300'
+  emulator-sql-password:
+    description: SA password passed to Azure SQL Edge used by the emulator.
+    required: false
+    default: StrongP@ssword!123
 runs:
   using: node20
   main: dist/index.js
