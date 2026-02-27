@@ -8,54 +8,50 @@ const cleanupPs1 = path.resolve(__dirname, '../cleanup.ps1');
 console.log('Setup path: ' + setupPs1);
 console.log('Cleanup path: ' + cleanupPs1);
 
-// Only one endpoint, so determine if this is the post action, and set it true so that
-// the next time we're executed, it goes to the post action
-let isPost = core.getState('IsPost');
+const isPost = core.getState('IsPost');
 core.saveState('IsPost', true);
 
-let connectionStringName = core.getInput('connection-string-name');
-let azureCredentials = core.getInput('azure-credentials');
-let tagName = core.getInput('tag');
+const connectionStringName = core.getInput('connection-string-name');
+const azureCredentials = core.getInput('azure-credentials');
+const tagName = core.getInput('tag');
+const useEmulator = core.getBooleanInput('use-emulator');
+const emulatorHost = core.getInput('emulator-host') || 'localhost';
+const emulatorAmqpPort = core.getInput('emulator-amqp-port') || '5672';
+const emulatorHttpPort = core.getInput('emulator-http-port') || '5300';
+const emulatorSqlPassword = core.getInput('emulator-sql-password') || 'StrongP@ssword!123';
 
 async function run() {
-
     try {
-
         if (!isPost) {
-
-            console.log("Running setup action");
-
-            let ASBName = 'psw-asb-' + Math.round(10000000000 * Math.random());
-            core.saveState('ASBName', ASBName);
-
-            console.log("ASBName = " + ASBName);
+            console.log('Running setup action');
 
             await exec.exec('pwsh', [
                 '-File', setupPs1,
-                '-ASBName', ASBName,
                 '-connectionStringName', connectionStringName,
                 '-tagName', tagName,
-                '-azureCredentials', azureCredentials
+                '-azureCredentials', azureCredentials,
+                '-useEmulator', useEmulator ? 'true' : 'false',
+                '-emulatorHost', emulatorHost,
+                '-emulatorAmqpPort', emulatorAmqpPort,
+                '-emulatorHttpPort', emulatorHttpPort,
+                '-emulatorSqlPassword', emulatorSqlPassword
             ]);
-
-        } else { // Cleanup
-
-            console.log("Running cleanup");
-
-            let ASBName = core.getState('ASBName');
+        } else {
+            console.log('Running cleanup');
 
             await exec.exec('pwsh', [
                 '-File', cleanupPs1,
-                '-ASBName', ASBName
+                '-ASBName', core.getState('ASBName'),
+                '-useEmulator', core.getState('UseEmulator'),
+                '-useAciEmulator', core.getState('UseAciEmulator'),
+                '-emulatorAssetPath', core.getState('EmulatorAssetPath'),
+                '-emulatorComposeFilePath', core.getState('EmulatorComposeFilePath')
             ]);
-
         }
-
     } catch (err) {
         core.setFailed(err);
         console.log(err);
     }
-
 }
 
 run();

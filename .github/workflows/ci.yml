@@ -17,14 +17,35 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            name: Windows
+            name: Windows Azure
+            use-emulator: false
+            needs-azure-login: true
+            emulator-amqp-port: '5672'
+            emulator-http-port: '5300'
           - os: ubuntu-latest
-            name: Linux
+            name: Linux Azure
+            use-emulator: false
+            needs-azure-login: true
+            emulator-amqp-port: '5672'
+            emulator-http-port: '5300'
+          - os: windows-latest
+            name: Windows Emulator
+            use-emulator: true
+            needs-azure-login: true
+            emulator-amqp-port: '5672'
+            emulator-http-port: '5300'
+          - os: ubuntu-latest
+            name: Linux Emulator
+            use-emulator: true
+            needs-azure-login: false
+            emulator-amqp-port: '5672'
+            emulator-http-port: '5300'
       fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
       - name: Azure login
+        if: ${{ matrix.needs-azure-login == true }}
         uses: azure/login@v2.3.0
         with:
           creds: ${{ secrets.AZURE_ACI_CREDENTIALS }}
@@ -34,6 +55,9 @@ jobs:
           connection-string-name: ASBConnectionString
           azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
           tag: setup-azureservicebus-action
+          use-emulator: ${{ matrix.use-emulator }}
+          emulator-amqp-port: ${{ matrix.emulator-amqp-port }}
+          emulator-http-port: ${{ matrix.emulator-http-port }}
       - name: Validate
         shell: pwsh
         run: |
@@ -44,6 +68,14 @@ jobs:
           echo "ASBConnectionString_Restricted = $($Env:ASBConnectionString_Restricted)"
           if ( $Env:ASBConnectionString_Restricted -le 0 ) {
             throw "Environment variable 'ASBConnectionString_Restricted' not set."
+          }
+          echo "ASBConnectionString_Admin = $($Env:ASBConnectionString_Admin)"
+          if ( $Env:ASBConnectionString_Admin -le 0 ) {
+            throw "Environment variable 'ASBConnectionString_Admin' not set."
+          }
+          echo "ASBUseEmulator = $($Env:ASBUseEmulator)"
+          if ( $Env:ASBUseEmulator -ne "${{ matrix.use-emulator }}".ToLowerInvariant() ) {
+            throw "Environment variable 'ASBUseEmulator' not aligned with matrix mode."
           }
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v5.1.0
