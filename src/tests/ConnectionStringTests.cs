@@ -7,10 +7,14 @@ namespace Tests;
 [TestFixture]
 public class ConnectionStringTests
 {
+    static bool UseEmulator => string.Equals(Environment.GetEnvironmentVariable("ASBUseEmulator"), "true", StringComparison.OrdinalIgnoreCase);
+    static string RuntimeConnectionString => Environment.GetEnvironmentVariable("ASBConnectionString")!;
+    static string AdminConnectionString => Environment.GetEnvironmentVariable("ASBConnectionString_Admin") ?? RuntimeConnectionString;
+
     [Test]
     public async Task Should_establish_connection_with_manage_rights()
     {
-        var client = new ServiceBusAdministrationClient(Environment.GetEnvironmentVariable("ASBConnectionString"));
+        var client = new ServiceBusAdministrationClient(AdminConnectionString);
         await client.CreateQueueAsync("testqueue");
     }
     
@@ -19,7 +23,7 @@ public class ConnectionStringTests
     {
         await CreateQueueWithManageRightsIfNotExists();
         
-        await using var client = new ServiceBusClient(Environment.GetEnvironmentVariable("ASBConnectionString"));
+        await using var client = new ServiceBusClient(RuntimeConnectionString);
         var sender = client.CreateSender("testqueue");
         await sender.SendMessageAsync(new ServiceBusMessage(nameof(Should_have_send_claims_with_manage_rights)));
     }
@@ -29,14 +33,14 @@ public class ConnectionStringTests
     {
         await CreateQueueWithManageRightsIfNotExists();
 
-        await using var client = new ServiceBusClient(Environment.GetEnvironmentVariable("ASBConnectionString"));
+        await using var client = new ServiceBusClient(RuntimeConnectionString);
         var receiver = client.CreateReceiver("testqueue");
         await receiver.ReceiveMessageAsync(TimeSpan.FromMilliseconds(500));
     }
     
     async Task CreateQueueWithManageRightsIfNotExists()
     {
-        var serviceBusAdminClient = new ServiceBusAdministrationClient(Environment.GetEnvironmentVariable("ASBConnectionString"));
+        var serviceBusAdminClient = new ServiceBusAdministrationClient(AdminConnectionString);
         if (!await serviceBusAdminClient.QueueExistsAsync("testqueue"))
         {
             await serviceBusAdminClient.CreateQueueAsync("testqueue");            
@@ -46,6 +50,11 @@ public class ConnectionStringTests
     [Test]
     public void Should_establish_connection_without_manage_rights()
     {
+        if (UseEmulator)
+        {
+            Assert.Ignore("Emulator does not expose a restricted SAS rule in this action.");
+        }
+
         var client = new ServiceBusAdministrationClient(Environment.GetEnvironmentVariable("ASBConnectionString_Restricted"));
         Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await client.CreateQueueAsync("testqueue"));
     }

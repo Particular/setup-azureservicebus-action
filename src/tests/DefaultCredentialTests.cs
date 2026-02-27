@@ -9,11 +9,20 @@ namespace Tests;
 public class DefaultCredentialTests
 {
     string fullyQualifiedNamespace;
+    bool useEmulator;
 
     [SetUp]
     public void Setup()
     {
-        var connectionString = Environment.GetEnvironmentVariable("ASBConnectionString");
+        useEmulator = string.Equals(Environment.GetEnvironmentVariable("ASBUseEmulator"), "true", StringComparison.OrdinalIgnoreCase);
+
+        if (useEmulator)
+        {
+            Assert.Ignore("DefaultAzureCredential tests are only valid for Azure-hosted Service Bus.");
+        }
+
+        var connectionString = Environment.GetEnvironmentVariable("ASBConnectionString_Admin")
+                               ?? Environment.GetEnvironmentVariable("ASBConnectionString");
         
         fullyQualifiedNamespace = ServiceBusConnectionStringProperties.Parse(connectionString).FullyQualifiedNamespace;      
     }
