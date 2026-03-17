@@ -42,7 +42,6 @@ Available emulator inputs:
 - `emulator-host` (default: `localhost`)
 - `emulator-amqp-port` (default: `5672`)
 - `emulator-http-port` (default: `5300`)
-- `emulator-sql-password` (default: `StrongP@ssword!123`)
 
 ## License
 
