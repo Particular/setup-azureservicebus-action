@@ -5,8 +5,7 @@ param (
     [string]$useEmulator = "false",
     [string]$emulatorHost = "localhost",
     [string]$emulatorAmqpPort = "5672",
-    [string]$emulatorHttpPort = "5300",
-    [string]$emulatorSqlPassword = "StrongP@ssword!123"
+    [string]$emulatorHttpPort = "5300"
 )
 
 function Save-State {
@@ -141,6 +140,9 @@ function Setup-EmulatorWithDockerCompose {
 
     New-Item -Path $emulatorAssetPath -ItemType Directory -Force > $null
 
+    $emulatorSqlPassword = -join ((48..57 + 65..90 + 97..122) | Get-Random -Count 16 | ForEach-Object { [char]$_ })
+    Write-Output "::add-mask::$emulatorSqlPassword"
+
     Write-Output "Creating minimal Azure Service Bus Emulator config"
     New-MinimalEmulatorConfig -Path $configFilePath
     $configFilePathForCompose = $configFilePath.Replace('\\', '/')
@@ -253,6 +255,8 @@ function Setup-EmulatorWithAci {
     $configFilePath = Join-Path $emulatorAssetPath "Config.json"
     $aciTemplatePath = Join-Path $emulatorAssetPath "aci-template.yaml"
     New-Item -Path $emulatorAssetPath -ItemType Directory -Force > $null
+
+    $emulatorSqlPassword = -join ((48..57 + 65..90 + 97..122) | Get-Random -Count 16 | ForEach-Object { [char]$_ })
 
     Write-Output "Creating minimal Azure Service Bus Emulator config"
     New-MinimalEmulatorConfig -Path $configFilePath

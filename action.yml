@@ -26,10 +26,7 @@ inputs:
     description: Public HTTP management port used by the emulator admin endpoint.
     required: false
     default: '5300'
-  emulator-sql-password:
-    description: SA password passed to Azure SQL Edge used by the emulator.
-    required: false
-    default: StrongP@ssword!123
+
 runs:
   using: node20
   main: dist/index.js

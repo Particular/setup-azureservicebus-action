@@ -18,7 +18,7 @@ const useEmulator = core.getBooleanInput('use-emulator');
 const emulatorHost = core.getInput('emulator-host') || 'localhost';
 const emulatorAmqpPort = core.getInput('emulator-amqp-port') || '5672';
 const emulatorHttpPort = core.getInput('emulator-http-port') || '5300';
-const emulatorSqlPassword = core.getInput('emulator-sql-password') || 'StrongP@ssword!123';
+
 
 async function run() {
     try {
@@ -33,8 +33,7 @@ async function run() {
                 '-useEmulator', useEmulator ? 'true' : 'false',
                 '-emulatorHost', emulatorHost,
                 '-emulatorAmqpPort', emulatorAmqpPort,
-                '-emulatorHttpPort', emulatorHttpPort,
-                '-emulatorSqlPassword', emulatorSqlPassword
+                '-emulatorHttpPort', emulatorHttpPort
             ]);
         } else {
             console.log('Running cleanup');
