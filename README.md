@@ -27,8 +27,6 @@ Set `use-emulator: true` to run the action against the Azure Service Bus Emulato
         with:
           connection-string-name: ASBConnectionString
           use-emulator: true
-          emulator-amqp-port: 5673
-          emulator-http-port: 5301
 ```
 
 When `use-emulator` is `true`:
