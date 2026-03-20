@@ -356,7 +356,7 @@ properties:
     }
 
     Wait-ForEmulatorHealth -EmulatorHost $containerHost -EmulatorPort $emulatorHttpPort -TimeoutSeconds 420
-    Export-EmulatorConnectionStrings -EmulatorHost $containerHost -AmqpPort "5672" -HttpPort $emulatorHttpPort
+    Export-EmulatorConnectionStrings -EmulatorHost $containerHost -AmqpPort $emulatorAmqpPort -HttpPort $emulatorHttpPort
 
     Save-State -Name "UseEmulator" -Value "true"
     Save-State -Name "UseAciEmulator" -Value "true"
