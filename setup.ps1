@@ -61,15 +61,19 @@ function Export-EmulatorConnectionStrings {
     )
 
     $runtimeConnectionString = "Endpoint=sb://${EmulatorHost}:${AmqpPort};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+    $runtimeConnectionStringWithoutPort = "Endpoint=sb://${EmulatorHost};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
     $adminConnectionString = "Endpoint=sb://${EmulatorHost}:${HttpPort};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+    $withoutPortConnectionStringName = "$($connectionStringName)_WithoutPort"
     $restrictedConnectionStringName = "$($connectionStringName)_Restricted"
     $adminConnectionStringName = "$($connectionStringName)_Admin"
 
     Write-Output "::add-mask::$runtimeConnectionString"
+    Write-Output "::add-mask::$runtimeConnectionStringWithoutPort"
     Write-Output "::add-mask::$adminConnectionString"
 
     Export-Env -Name $connectionStringName -Value $runtimeConnectionString
     Export-Env -Name $restrictedConnectionStringName -Value $runtimeConnectionString
+    Export-Env -Name $withoutPortConnectionStringName -Value $runtimeConnectionStringWithoutPort
     Export-Env -Name $adminConnectionStringName -Value $adminConnectionString
     Export-Env -Name "ASBUseEmulator" -Value "true"
 }
