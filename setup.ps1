@@ -74,8 +74,8 @@ function Export-EmulatorConnectionStrings {
         "sb://${EmulatorHost}:${HttpPort}"
     }
 
-    $runtimeConnectionString = "Endpoint=${amqpEndpoint};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
-    $adminConnectionString = "Endpoint=${httpEndpoint};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+    $runtimeConnectionString = "Endpoint=sb://${EmulatorHost};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+    $adminConnectionString = "Endpoint=sb://${EmulatorHost};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
     $restrictedConnectionStringName = "$($connectionStringName)_Restricted"
     $adminConnectionStringName = "$($connectionStringName)_Admin"
 
