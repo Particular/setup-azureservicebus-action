@@ -101,6 +101,7 @@ function Wait-ForEmulatorHealth {
     )
 
     $healthUrl = "http://${EmulatorHost}:${EmulatorPort}/health"
+    Write-Output "::add-mask::$healthUrl"
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     $attempt = 0
 
