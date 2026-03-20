@@ -179,7 +179,7 @@ services:
       MSSQL_SA_PASSWORD: "${SQL_PASSWORD}"
       ACCEPT_EULA: ${ACCEPT_EULA}
       SQL_WAIT_INTERVAL: ${SQL_WAIT_INTERVAL}
-      EMULATOR_HTTP_PORT: 5300
+      EMULATOR_HTTP_PORT: ${EMULATOR_HTTP_PORT:-5300}
     depends_on:
       - sqledge
     networks:
