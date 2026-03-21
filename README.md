@@ -41,8 +41,6 @@ Available emulator inputs:
 - `emulator-amqp-port` (default: `5672`)
 - `emulator-http-port` (default: `5300`)
 
-The setup action also automatically propagates an environment variable called `EnvVarToCreateWithConnectionString_WithoutPort` with a dedicated connection string that does not contain the port. This is required to workaround some emulator and SDK restrictions with the admin client. 
-
 ## License
 
 The scripts and documentation in this project are released under the [MIT License](LICENSE).
