@@ -101,6 +101,7 @@ function Wait-ForEmulatorHealth {
     )
 
     $healthUrl = "http://${EmulatorHost}:${EmulatorPort}/health"
+    Write-Output "::add-mask::$healthUrl"
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     $attempt = 0
 
@@ -164,7 +165,7 @@ services:
       MSSQL_SA_PASSWORD: "${SQL_PASSWORD}"
       ACCEPT_EULA: ${ACCEPT_EULA}
       SQL_WAIT_INTERVAL: ${SQL_WAIT_INTERVAL}
-      EMULATOR_HTTP_PORT: 5300
+      EMULATOR_HTTP_PORT: ${EMULATOR_HTTP_PORT:-5300}
     depends_on:
       - sqledge
     networks:
@@ -341,7 +342,7 @@ properties:
     }
 
     Wait-ForEmulatorHealth -EmulatorHost $containerHost -EmulatorPort $emulatorHttpPort -TimeoutSeconds 420
-    Export-EmulatorConnectionStrings -EmulatorHost $containerHost -AmqpPort "5672" -HttpPort $emulatorHttpPort
+    Export-EmulatorConnectionStrings -EmulatorHost $containerHost -AmqpPort $emulatorAmqpPort -HttpPort $emulatorHttpPort
 
     Save-State -Name "UseEmulator" -Value "true"
     Save-State -Name "UseAciEmulator" -Value "true"
