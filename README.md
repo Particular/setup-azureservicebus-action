@@ -41,6 +41,20 @@ Available emulator inputs:
 - `emulator-amqp-port` (default: `5672`)
 - `emulator-http-port` (default: `5300`)
 
+### Skipping cleanup
+
+Set `skip-cleanup: true` to skip the cleanup step, leaving Azure resources running for inspection. This option is intended for testing only and will cause the workflow to fail on cleanup to prevent accidentally merging a branch in test mode.
+
+```yaml
+      - name: Setup infrastructure
+        uses: Particular/setup-azureservicebus-action@v1.0.0
+        with:
+          connection-string-name: EnvVarToCreateWithConnectionString
+          azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
+          tag: PackageName
+          skip-cleanup: true
+```
+
 ## License
 
 The scripts and documentation in this project are released under the [MIT License](LICENSE).

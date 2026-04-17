@@ -26,6 +26,9 @@ inputs:
     description: Public HTTP management port used by the emulator admin endpoint.
     required: false
     default: '5300'
+  skip-cleanup:
+    description: For testing only, set to 'true' to skip the cleanup step so the Azure resources can be inspected. Causes an error on cleanup to prevent merging a branch in test mode.
+    required: false
 
 runs:
   using: node24

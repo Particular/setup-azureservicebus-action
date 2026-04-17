@@ -1,6 +1,6 @@
-const path = require('path');
-const core = require('@actions/core');
-const exec = require('@actions/exec');
+import * as path from 'path';
+import * as core from '@actions/core';
+import * as exec from '@actions/exec';
 
 const setupPs1 = path.resolve(__dirname, '../setup.ps1');
 const cleanupPs1 = path.resolve(__dirname, '../cleanup.ps1');
@@ -18,6 +18,7 @@ const useEmulator = core.getBooleanInput('use-emulator');
 const emulatorHost = core.getInput('emulator-host') || 'localhost';
 const emulatorAmqpPort = core.getInput('emulator-amqp-port') || '5672';
 const emulatorHttpPort = core.getInput('emulator-http-port') || '5300';
+const skipCleanup = core.getInput('skip-cleanup') === 'true';
 
 
 async function run() {
@@ -37,6 +38,12 @@ async function run() {
             ]);
         } else {
             console.log('Running cleanup');
+
+            if (skipCleanup) {
+                core.error('Skipping cleanup because skip-cleanup was set to true. This fails the workflow to prevent merging a test-only configuration.');
+                core.setFailed('Failing because test-only skip-cleanup is set to true');
+                return;
+            }
 
             await exec.exec('pwsh', [
                 '-File', cleanupPs1,
