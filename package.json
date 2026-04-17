@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npm-watch",
-    "prepare": "ncc build index.js -o dist --license licenses.txt"
+    "prepare": "npx @vercel/ncc build index.js -o dist --license licenses.txt"
   },
   "watch": {
     "prepare": {
