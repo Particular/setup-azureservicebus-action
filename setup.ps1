@@ -390,18 +390,34 @@ function Setup-Azure {
 
     Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a while.)"
     $details = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create Azure Service Bus namespace $ASBName in resource group $resourceGroup."
+    }
 
     Write-Output "Assigning roles to Azure Service Bus namespace $ASBName"
     az role assignment create --assignee $credentials.principalId --role "Azure Service Bus Data Owner" --scope $details.id > $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to assign roles to Azure Service Bus namespace $ASBName."
+    }
 
     Write-Output "Getting connection string"
     $keys = az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $ASBName --name RootManageSharedAccessKey | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to get connection string for Azure Service Bus namespace $ASBName."
+    }
     $connectString = $keys.primaryConnectionString
     Write-Output "::add-mask::$connectString"
 
     Write-Output "Getting connection string without manage rights"
     az servicebus namespace authorization-rule create --resource-group $resourceGroup --namespace-name $ASBName --name RootNoManageSharedAccessKey --rights Send Listen > $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create authorization rule without manage rights for Azure Service Bus namespace $ASBName."
+    }
+
     $noManageKeys = az servicebus namespace authorization-rule keys list --resource-group $resourceGroup --namespace-name $ASBName --name RootNoManageSharedAccessKey | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to get connection string without manage rights for Azure Service Bus namespace $ASBName."
+    }
     $noManageConnectString = $noManageKeys.primaryConnectionString
     Write-Output "::add-mask::$noManageConnectString"
 
