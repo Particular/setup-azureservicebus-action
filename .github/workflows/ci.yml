@@ -52,7 +52,9 @@ jobs:
 
       - name: print az cli version
         if: ${{ matrix.needs-azure-login == true }}
-        run: az --version
+        run: |
+          az --version
+          az servicebus namespace create --help
         
       - name: Run
         uses: ./
