@@ -389,9 +389,10 @@ function Setup-Azure {
     $ASBName = "psw-asb-" + (Get-Random -Minimum 1000000000 -Maximum 9999999999)
 
     # There have been issues with the module loader for az servicebus failing with concurrency issues
-    # under certain combinations of runner image and cli version. To avoid this it seems to help by 
-    # calling the command command using --help seems to allow it to load under a diffent path that
-    # is not impacted with the same deadlock issues.
+    # under certain combinations of runner image and cli version, it seems to help by 
+    # calling the command command using --help.
+    # This seems to allow it to load under a different path that is not impacted 
+    # with the same threading deadlock issues.
     az servicebus namespace create --help | Out-Null
 
     Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a while.)"
