@@ -49,13 +49,6 @@ jobs:
         uses: azure/login@v3.0.0
         with:
           creds: ${{ secrets.AZURE_ACI_CREDENTIALS }}
-
-      - name: print az cli version
-        if: ${{ matrix.needs-azure-login == true }}
-        run: |
-          az --version
-          az servicebus namespace create --help
-        
       - name: Run
         uses: ./
         with:
