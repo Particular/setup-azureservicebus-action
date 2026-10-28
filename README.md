@@ -2,6 +2,19 @@
 
 This action handles the setup and teardown of an Azure Service Bus namespace for running tests.
 
+## Temporary Azure CLI version pin
+
+On Windows and Linux GitHub-hosted runners, the action installs Azure CLI 2.90.0
+when Azure resources are needed. The latest release, 2.91.0, hits a Python import
+deadlock during namespace creation ([Azure/azure-cli#33996](https://github.com/Azure/azure-cli/issues/33996)).
+This follows the workaround used by [ServiceControl](https://github.com/Particular/ServiceControl/pull/6014).
+
+The pin is temporary until a release containing [the upstream fix](https://github.com/Azure/azure-cli/pull/34201)
+is published. At that point, remove `install-azure-cli.ps1` and its invocation in
+`setup.ps1`. Windows uses the ZIP distribution because the MSI cannot downgrade a
+newer runner installation; the pinned CLI is also used by later steps and cleanup.
+The Linux emulator path does not install Azure CLI.
+
 ## Usage
 
 ```yaml
@@ -73,12 +86,6 @@ az account set --subscription SUBSCRIPTION_ID
 When changing `index.js`, either run `npm run dev` beforehand, which will watch the file for changes and automatically compile it, or run `npm run prepare` afterwards.
 
 ## Testing
-
-Run the setup retry and cleanup checks without Azure credentials:
-
-```shell
-pwsh -NoProfile -File tests/Setup.Tests.ps1
-```
 
 ### With PowerShell
 
