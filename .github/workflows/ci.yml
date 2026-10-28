@@ -9,6 +9,9 @@ on:
     paths-ignore:
       - '**.md'
   workflow_dispatch:
+defaults:
+  run:
+    shell: pwsh
 jobs:
   ci:
     name: ${{ matrix.name }}
@@ -42,8 +45,15 @@ jobs:
             emulator-http-port: '5300'
       fail-fast: false
     steps:
+      - name: Check for secrets
+        if: ${{ matrix.needs-azure-login == true }}
+        env:
+          SECRETS_AVAILABLE: ${{ secrets.SECRETS_AVAILABLE }}
+        run: exit $(If ($env:SECRETS_AVAILABLE -eq 'true') { 0 } Else { 1 })
       - name: Checkout
         uses: actions/checkout@v7.0.1
+      - name: Test setup retry and cleanup
+        run: ./tests/Setup.Tests.ps1
       - name: Azure login
         if: ${{ matrix.needs-azure-login == true }}
         uses: azure/login@v3.1.0

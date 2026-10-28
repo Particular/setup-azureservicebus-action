@@ -74,6 +74,12 @@ When changing `index.js`, either run `npm run dev` beforehand, which will watch 
 
 ## Testing
 
+Run the setup retry and cleanup checks without Azure credentials:
+
+```shell
+pwsh -NoProfile -File tests/Setup.Tests.ps1
+```
+
 ### With PowerShell
 
 To test the setup action set the required environment variables and execute `setup.ps1` with the desired parameters.

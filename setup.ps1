@@ -388,6 +388,11 @@ function Setup-Azure {
     $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
     $ASBName = "psw-asb-" + (Get-Random -Minimum 1000000000 -Maximum 9999999999)
 
+    # A failed CLI call can leave a namespace behind. Record it before creation so
+    # post-job cleanup can delete it even if creation or later configuration fails.
+    Save-State -Name "UseEmulator" -Value "false"
+    Save-State -Name "ASBName" -Value $ASBName
+
     # There have been issues with the module loader for az servicebus failing with concurrency issues
     # under certain combinations of runner image and cli version, it seems to help by 
     # calling the command command using --help.
@@ -395,10 +400,23 @@ function Setup-Azure {
     # with the same threading deadlock issues.
     az servicebus namespace create --help | Out-Null
 
-    Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a while.)"
-    $details = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create Azure Service Bus namespace $ASBName in resource group $resourceGroup."
+    # The CLI can still hit a Python import deadlock despite the --help workaround.
+    # Reuse the namespace name in case Azure accepted a previous create request.
+    $maxAttempts = 3
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        Write-Output "Creating Azure Service Bus namespace $ASBName (attempt $attempt of $maxAttempts; this can take a while.)"
+        $output = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag
+        if ($LASTEXITCODE -eq 0) {
+            $details = $output | ConvertFrom-Json
+            break
+        }
+
+        if ($attempt -eq $maxAttempts) {
+            throw "Failed to create Azure Service Bus namespace $ASBName in resource group $resourceGroup after $maxAttempts attempts."
+        }
+
+        Write-Warning "Namespace creation failed. Retrying in 5 seconds."
+        Start-Sleep -Seconds 5
     }
 
     Write-Output "Assigning roles to Azure Service Bus namespace $ASBName"
@@ -435,9 +453,6 @@ function Setup-Azure {
     Export-Env -Name $noManageConnectionStringName -Value $noManageConnectString
     Export-Env -Name $adminConnectionStringName -Value $connectString
     Export-Env -Name "ASBUseEmulator" -Value "false"
-
-    Save-State -Name "UseEmulator" -Value "false"
-    Save-State -Name "ASBName" -Value $ASBName
 }
 
 if ($useEmulator -eq "true") {
