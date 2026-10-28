@@ -440,6 +440,13 @@ function Setup-Azure {
     Save-State -Name "ASBName" -Value $ASBName
 }
 
+if ($useEmulator -ne "true" -or $Env:RUNNER_OS -eq "Windows") {
+    & (Join-Path $PSScriptRoot 'install-azure-cli.ps1')
+    if (-not $?) {
+        throw 'Failed to install the temporary Azure CLI version.'
+    }
+}
+
 if ($useEmulator -eq "true") {
     Setup-Emulator
 }
