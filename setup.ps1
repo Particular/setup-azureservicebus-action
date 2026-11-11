@@ -88,8 +88,84 @@ function Get-RunnerRegion {
     catch {
     }
 
-    Write-Output "Could not determine region from metadata, defaulting to eastus"
+    Write-Host "Could not determine region from metadata, defaulting to eastus"
     return "eastus"
+}
+
+function Get-NearbyRegions {
+    param([string]$Primary)
+
+    # West → central family → east
+    if ($Primary -match '^westus(\d+)?$') {
+        return @($Primary, "westus", "westus2", "westus3", "westcentralus", "southcentralus", "centralus", "northcentralus", "eastus2", "eastus")
+    }
+
+    # East → central family → west
+    if ($Primary -match '^eastus(\d+)?$') {
+        return @($Primary, "eastus", "eastus2", "centralus", "northcentralus", "southcentralus", "westus", "westus2", "westus3", "westcentralus")
+    }
+
+    switch -Regex ($Primary) {
+        '^centralus$' { return @($Primary, "northcentralus", "southcentralus", "eastus", "eastus2", "westus", "westus2", "westus3", "westcentralus") }
+        '^northcentralus$' { return @($Primary, "centralus", "southcentralus", "eastus", "eastus2", "westus", "westus2", "westus3", "westcentralus") }
+        '^southcentralus$' { return @($Primary, "centralus", "northcentralus", "westus", "westus2", "westus3", "westcentralus", "eastus", "eastus2") }
+        '^westcentralus$' { return @($Primary, "westus", "westus2", "westus3", "southcentralus", "centralus", "northcentralus", "eastus2", "eastus") }
+    }
+
+    return @($Primary, "centralus", "northcentralus", "southcentralus", "eastus2", "eastus", "westus2", "westus", "westus3", "westcentralus")
+}
+
+function Get-CandidateRegions {
+    param(
+        [string]$ProviderNamespace,
+        [string]$ResourceType
+    )
+
+    $primary = (Get-RunnerRegion).ToLowerInvariant()
+    Write-Host "Actions agent running in Azure region $primary"
+
+    if ($Env:REGION_OVERRIDE) {
+        return @($primary)
+    }
+
+    $candidates = Get-NearbyRegions -Primary $primary | Select-Object -Unique
+
+    # Best effort: drop regions where the resource type isn't offered (e.g. ACI in eastus3).
+    $providerJson = az provider show --namespace $ProviderNamespace --only-show-errors --output json
+    if ($LASTEXITCODE -eq 0 -and $providerJson) {
+        $offered = (($providerJson | ConvertFrom-Json).resourceTypes |
+            Where-Object { $_.resourceType -eq $ResourceType }).locations |
+            ForEach-Object { ($_ -replace '\s', '').ToLowerInvariant() }
+
+        $filtered = @($candidates | Where-Object { $offered -contains $_ })
+        $skipped = @($candidates | Where-Object { $offered -notcontains $_ })
+        if ($skipped.Count -gt 0) {
+            Write-Host "Skipping regions where $ProviderNamespace/$ResourceType is not available: $($skipped -join ', ')"
+        }
+        if ($filtered.Count -gt 0) {
+            $candidates = $filtered
+        }
+    }
+
+    Write-Host "Candidate regions in order: $($candidates -join ', ')"
+    return $candidates
+}
+
+function Invoke-AzCli {
+    $output = & az @args 2>&1
+    $exitCode = $LASTEXITCODE
+
+    [pscustomobject]@{
+        ExitCode = $exitCode
+        StdOut   = ($output | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n"
+        StdErr   = ($output | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { $_.ToString() }) -join "`n"
+    }
+}
+
+function Test-RegionRetriableError {
+    param([string]$ErrorText)
+
+    return $ErrorText -match 'LocationNotAvailableForResourceType|NoRegisteredProviderFound|LocationNotSupported|RegionNotSupported|SkuNotAvailable|ServiceUnavailable|ResourceUnavailable|InternalServerError|ContainerGroupQuotaReached|high demand|capacity|quota'
 }
 
 function Wait-ForEmulatorHealth {
@@ -238,7 +314,6 @@ function Setup-EmulatorWithAci {
     }
 
     $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
-    $region = Get-RunnerRegion
     $effectiveTagName = if ($tagName) { $tagName } else { "setup-azureservicebus-action" }
     $containerGroupName = "psw-asb-" + (Get-Random -Minimum 1000000000 -Maximum 9999999999)
 
@@ -268,7 +343,7 @@ function Setup-EmulatorWithAci {
 
     $aciTemplate = @"
 apiVersion: '2021-10-01'
-location: $region
+location: __REGION__
 name: $containerGroupName
 type: Microsoft.ContainerInstance/containerGroups
 tags:
@@ -328,13 +403,38 @@ properties:
         Config.json: '$configBase64'
 "@
 
-    Set-Content -Path $aciTemplatePath -Value $aciTemplate -NoNewline
+    $candidateRegions = Get-CandidateRegions -ProviderNamespace "Microsoft.ContainerInstance" -ResourceType "containerGroups"
+    $created = $false
 
-    Write-Output "Creating Azure Container Instance group $containerGroupName in $region"
-    az container create --resource-group $resourceGroup --file $aciTemplatePath | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create Azure Container Instance group for emulator."
+    foreach ($tryRegion in $candidateRegions) {
+        Set-Content -Path $aciTemplatePath -Value $aciTemplate.Replace('__REGION__', $tryRegion) -NoNewline
+
+        Write-Output "Creating Azure Container Instance group $containerGroupName in $tryRegion"
+        $result = Invoke-AzCli container create --resource-group $resourceGroup --file $aciTemplatePath --only-show-errors --output none
+        if ($result.ExitCode -eq 0) {
+            $created = $true
+            break
+        }
+
+        Write-Output $result.StdErr
+        if (-not (Test-RegionRetriableError -ErrorText $result.StdErr)) {
+            Write-Output "Creation in $tryRegion failed due to a non-region related error; not attempting other regions."
+            break
+        }
+
+        Write-Output "Creation in $tryRegion failed due to region availability or capacity; cleaning up and trying the next region."
+        az container delete --resource-group $resourceGroup --name $containerGroupName --yes --only-show-errors 2>&1 | Out-Null
     }
+
+    if (-not $created) {
+        throw "Failed to create Azure Container Instance group for emulator in any of: $($candidateRegions -join ', ')."
+    }
+
+    # Saved right away so the post step deletes the group even if the health check fails.
+    Save-State -Name "UseEmulator" -Value "true"
+    Save-State -Name "UseAciEmulator" -Value "true"
+    Save-State -Name "ASBName" -Value $containerGroupName
+    Save-State -Name "EmulatorAssetPath" -Value $emulatorAssetPath
 
     $containerHost = az container show --resource-group $resourceGroup --name $containerGroupName --query ipAddress.ip -o tsv
     if (-not $containerHost) {
@@ -343,11 +443,6 @@ properties:
 
     Wait-ForEmulatorHealth -EmulatorHost $containerHost -EmulatorPort $emulatorHttpPort -TimeoutSeconds 420
     Export-EmulatorConnectionStrings -EmulatorHost $containerHost -AmqpPort $emulatorAmqpPort -HttpPort $emulatorHttpPort
-
-    Save-State -Name "UseEmulator" -Value "true"
-    Save-State -Name "UseAciEmulator" -Value "true"
-    Save-State -Name "ASBName" -Value $containerGroupName
-    Save-State -Name "EmulatorAssetPath" -Value $emulatorAssetPath
 }
 
 function Setup-Emulator {
@@ -373,20 +468,9 @@ function Setup-Azure {
     $credentials = $azureCredentials | ConvertFrom-Json
     $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
 
-    if ($Env:REGION_OVERRIDE) {
-        $region = $Env:REGION_OVERRIDE
-    }
-    else {
-        Write-Output "Getting the Azure region in which this workflow is running..."
-        $hostInfo = curl --silent -H Metadata:true --noproxy "*" "http://169.254.169.254/metadata/instance?api-version=2021-02-01" | ConvertFrom-Json
-        $region = $hostInfo.compute.location
-    }
-    Write-Output "Actions agent running in Azure region $region"
-
     $packageTag = "Package=$tagName"
     $runnerOsTag = "RunnerOS=$($Env:RUNNER_OS)"
     $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
-    $ASBName = "psw-asb-" + (Get-Random -Minimum 1000000000 -Maximum 9999999999)
 
     # There have been issues with the module loader for az servicebus failing with concurrency issues
     # under certain combinations of runner image and cli version, it seems to help by 
@@ -395,11 +479,37 @@ function Setup-Azure {
     # with the same threading deadlock issues.
     az servicebus namespace create --help | Out-Null
 
-    Write-Output "Creating Azure Service Bus namespace $ASBName (This can take a while.)"
-    $details = az servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $region --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create Azure Service Bus namespace $ASBName in resource group $resourceGroup."
+    $candidateRegions = Get-CandidateRegions -ProviderNamespace "Microsoft.ServiceBus" -ResourceType "namespaces"
+    $details = $null
+
+    foreach ($tryRegion in $candidateRegions) {
+        # Fresh name per attempt so a namespace stuck deleting can't block the retry.
+        $ASBName = "psw-asb-" + (Get-Random -Minimum 1000000000 -Maximum 9999999999)
+
+        Write-Output "Creating Azure Service Bus namespace $ASBName in $tryRegion (This can take a while.)"
+        $result = Invoke-AzCli servicebus namespace create --resource-group $resourceGroup --name $ASBName --location $tryRegion --tags $packageTag $runnerOsTag $dateTag --only-show-errors --output json
+        if ($result.ExitCode -eq 0) {
+            $details = $result.StdOut | ConvertFrom-Json
+            break
+        }
+
+        Write-Output $result.StdErr
+        if (-not (Test-RegionRetriableError -ErrorText $result.StdErr)) {
+            Write-Output "Creation in $tryRegion failed due to a non-region related error; not attempting other regions."
+            break
+        }
+
+        Write-Output "Creation in $tryRegion failed due to region availability or capacity; cleaning up and trying the next region."
+        az servicebus namespace delete --resource-group $resourceGroup --name $ASBName --only-show-errors 2>&1 | Out-Null
     }
+
+    if (-not $details) {
+        throw "Failed to create Azure Service Bus namespace in resource group $resourceGroup in any of: $($candidateRegions -join ', ')."
+    }
+
+    # Saved right away so the post step deletes the namespace even if a later step fails.
+    Save-State -Name "UseEmulator" -Value "false"
+    Save-State -Name "ASBName" -Value $ASBName
 
     Write-Output "Assigning roles to Azure Service Bus namespace $ASBName"
     az role assignment create --assignee $credentials.principalId --role "Azure Service Bus Data Owner" --scope $details.id > $null
@@ -435,9 +545,6 @@ function Setup-Azure {
     Export-Env -Name $noManageConnectionStringName -Value $noManageConnectString
     Export-Env -Name $adminConnectionStringName -Value $connectString
     Export-Env -Name "ASBUseEmulator" -Value "false"
-
-    Save-State -Name "UseEmulator" -Value "false"
-    Save-State -Name "ASBName" -Value $ASBName
 }
 
 if ($useEmulator -eq "true") {
