@@ -168,6 +168,12 @@ function Test-RegionRetriableError {
     return $ErrorText -match 'LocationNotAvailableForResourceType|NoRegisteredProviderFound|LocationNotSupported|RegionNotSupported|SkuNotAvailable|ServiceUnavailable|ResourceUnavailable|InternalServerError|ContainerGroupQuotaReached|high demand|capacity|quota'
 }
 
+function Test-AzResourceGone {
+    # Only an explicit not-found counts; a failed lookup could hide a leftover resource.
+    $result = Invoke-AzCli @args --only-show-errors --output none
+    return $result.ExitCode -ne 0 -and $result.StdErr -match 'ResourceNotFound|NotFound|could not be found|was not found'
+}
+
 function Wait-ForEmulatorHealth {
     param(
         [string]$EmulatorHost,
@@ -405,6 +411,12 @@ properties:
 
     $candidateRegions = Get-CandidateRegions -ProviderNamespace "Microsoft.ContainerInstance" -ResourceType "containerGroups"
     $created = $false
+    $saveAciState = {
+        Save-State -Name "UseEmulator" -Value "true"
+        Save-State -Name "UseAciEmulator" -Value "true"
+        Save-State -Name "ASBName" -Value $containerGroupName
+        Save-State -Name "EmulatorAssetPath" -Value $emulatorAssetPath
+    }
 
     foreach ($tryRegion in $candidateRegions) {
         Set-Content -Path $aciTemplatePath -Value $aciTemplate.Replace('__REGION__', $tryRegion) -NoNewline
@@ -424,6 +436,10 @@ properties:
 
         Write-Output "Creation in $tryRegion failed due to region availability or capacity; cleaning up and trying the next region."
         az container delete --resource-group $resourceGroup --name $containerGroupName --yes --only-show-errors 2>&1 | Out-Null
+        if (-not (Test-AzResourceGone container show --resource-group $resourceGroup --name $containerGroupName)) {
+            & $saveAciState
+            throw "Could not confirm cleanup of container group $containerGroupName after the failed attempt in $tryRegion; stopping so the post step can delete it."
+        }
     }
 
     if (-not $created) {
@@ -431,10 +447,7 @@ properties:
     }
 
     # Saved right away so the post step deletes the group even if the health check fails.
-    Save-State -Name "UseEmulator" -Value "true"
-    Save-State -Name "UseAciEmulator" -Value "true"
-    Save-State -Name "ASBName" -Value $containerGroupName
-    Save-State -Name "EmulatorAssetPath" -Value $emulatorAssetPath
+    & $saveAciState
 
     $containerHost = az container show --resource-group $resourceGroup --name $containerGroupName --query ipAddress.ip -o tsv
     if (-not $containerHost) {
@@ -501,6 +514,11 @@ function Setup-Azure {
 
         Write-Output "Creation in $tryRegion failed due to region availability or capacity; cleaning up and trying the next region."
         az servicebus namespace delete --resource-group $resourceGroup --name $ASBName --only-show-errors 2>&1 | Out-Null
+        if (-not (Test-AzResourceGone servicebus namespace show --resource-group $resourceGroup --name $ASBName)) {
+            Save-State -Name "UseEmulator" -Value "false"
+            Save-State -Name "ASBName" -Value $ASBName
+            throw "Could not confirm cleanup of namespace $ASBName after the failed attempt in $tryRegion; stopping so the post step can delete it."
+        }
     }
 
     if (-not $details) {
