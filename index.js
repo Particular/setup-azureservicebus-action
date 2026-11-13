@@ -15,7 +15,7 @@ const connectionStringName = core.getInput('connection-string-name');
 const azureCredentials = core.getInput('azure-credentials');
 const tagName = core.getInput('tag');
 const useEmulator = core.getBooleanInput('use-emulator');
-const emulatorHost = core.getInput('emulator-host') || 'localhost';
+const emulatorHost = core.getInput('emulator-host');
 const emulatorAmqpPort = core.getInput('emulator-amqp-port') || '5672';
 const emulatorHttpPort = core.getInput('emulator-http-port') || '5300';
 const skipCleanup = core.getInput('skip-cleanup') === 'true';
@@ -49,7 +49,6 @@ async function run() {
                 '-File', cleanupPs1,
                 '-ASBName', core.getState('ASBName'),
                 '-useEmulator', core.getState('UseEmulator'),
-                '-useAciEmulator', core.getState('UseAciEmulator'),
                 '-emulatorAssetPath', core.getState('EmulatorAssetPath'),
                 '-emulatorComposeFilePath', core.getState('EmulatorComposeFilePath')
             ]);
