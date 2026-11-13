@@ -19,25 +19,23 @@ The setup action also propagates `EnvVarToCreateWithConnectionString_Admin` for 
 
 ### Azure Service Bus Emulator
 
-Set `use-emulator: true` to run the action against the Azure Service Bus Emulator using Docker Compose.
+Set `use-emulator: true` to run the action against the Azure Service Bus Emulator using Docker Compose. Emulator mode requires [setup-wsl-action](https://github.com/Particular/setup-wsl-action) to run first in the same job. On Windows runners it provisions WSL2 and Docker, which the emulator runs in. On Linux runners it is a no-op but should still be included so the workflow is uniform. If it hasn't run, the action fails fast with a clear error.
 
 ```yaml
+      - name: Setup WSL
+        uses: Particular/setup-wsl-action@v1
       - name: Setup emulator
-        uses: Particular/setup-azureservicebus-action@v1.0.0
+        uses: Particular/setup-azureservicebus-action@v3.0.0
         with:
           connection-string-name: ASBConnectionString
           use-emulator: true
 ```
 
-When `use-emulator` is `true`:
-
-- Linux runners use Docker Compose locally.
-- Windows runners use Azure Container Instances (Linux containers), so `azure-credentials` is required.
-- In Windows ACI mode, emulator ports are fixed to `5672`/`5300`.
+Emulator mode doesn't need `azure-credentials` or `tag`.
 
 Available emulator inputs:
 
-- `emulator-host` (default: `localhost`)
+- `emulator-host` (default: the `WSL_IP` exported by setup-wsl-action, `127.0.0.1` on Linux)
 - `emulator-amqp-port` (default: `5672`)
 - `emulator-http-port` (default: `5300`)
 

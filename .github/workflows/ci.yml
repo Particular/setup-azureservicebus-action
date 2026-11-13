@@ -31,7 +31,7 @@ jobs:
           - os: windows-latest
             name: Windows Emulator
             use-emulator: true
-            needs-azure-login: true
+            needs-azure-login: false
             emulator-amqp-port: '5672'
             emulator-http-port: '5300'
           - os: ubuntu-latest
@@ -44,6 +44,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+      - name: Setup WSL
+        uses: Particular/setup-wsl-action@v1.2.0
       - name: Azure login
         if: ${{ matrix.needs-azure-login == true }}
         uses: azure/login@v3.1.0

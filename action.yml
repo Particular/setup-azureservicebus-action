@@ -11,13 +11,12 @@ inputs:
     description: The name of the component Azure Service Bus is being used for. The Service Bus namespace is tagged with this value.
     required: false
   use-emulator:
-    description: If true, uses Azure Service Bus Emulator via Docker Compose instead of provisioning Azure resources.
+    description: If true, uses Azure Service Bus Emulator via Docker Compose instead of provisioning Azure resources. Requires Particular/setup-wsl-action to run first.
     required: false
     default: 'false'
   emulator-host:
-    description: Hostname used to build emulator connection strings.
+    description: Hostname used to build emulator connection strings. Defaults to the WSL_IP exported by Particular/setup-wsl-action.
     required: false
-    default: localhost
   emulator-amqp-port:
     description: Public AMQP port used by the emulator runtime endpoint.
     required: false
