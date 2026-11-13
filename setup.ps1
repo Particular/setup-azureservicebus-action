@@ -95,17 +95,9 @@ function Get-RunnerRegion {
 function Get-NearbyRegions {
     param([string]$Primary)
 
-    # West → central family → east
-    if ($Primary -match '^westus(\d+)?$') {
-        return @($Primary, "westus", "westus2", "westus3", "westcentralus", "southcentralus", "centralus", "northcentralus", "eastus2", "eastus")
-    }
-
-    # East → central family → west
-    if ($Primary -match '^eastus(\d+)?$') {
-        return @($Primary, "eastus", "eastus2", "centralus", "northcentralus", "southcentralus", "westus", "westus2", "westus3", "westcentralus")
-    }
-
     switch -Regex ($Primary) {
+        '^westus\d*$' { return @($Primary, "westus", "westus2", "westus3", "westcentralus", "southcentralus", "centralus", "northcentralus", "eastus2", "eastus") }
+        '^eastus\d*$' { return @($Primary, "eastus", "eastus2", "centralus", "northcentralus", "southcentralus", "westus", "westus2", "westus3", "westcentralus") }
         '^centralus$' { return @($Primary, "northcentralus", "southcentralus", "eastus", "eastus2", "westus", "westus2", "westus3", "westcentralus") }
         '^northcentralus$' { return @($Primary, "centralus", "southcentralus", "eastus", "eastus2", "westus", "westus2", "westus3", "westcentralus") }
         '^southcentralus$' { return @($Primary, "centralus", "northcentralus", "westus", "westus2", "westus3", "westcentralus", "eastus", "eastus2") }
