@@ -531,6 +531,13 @@ function Setup-Azure {
     Export-Env -Name "ASBUseEmulator" -Value "false"
 }
 
+if ($useEmulator -ne "true" -or $Env:RUNNER_OS -eq "Windows") {
+    & (Join-Path $PSScriptRoot 'install-azure-cli.ps1')
+    if (-not $?) {
+        throw 'Failed to install the temporary Azure CLI version.'
+    }
+}
+
 if ($useEmulator -eq "true") {
     Setup-Emulator
 }
