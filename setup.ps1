@@ -166,25 +166,6 @@ function Test-AzResourceGone {
     return $result.ExitCode -ne 0 -and $result.StdErr -match 'ResourceNotFound|NotFound|could not be found|was not found'
 }
 
-function Invoke-DockerCompose {
-    param(
-        [string]$ComposeFilePath,
-        [string[]]$Arguments,
-        [switch]$CheckExitCode
-    )
-
-    if ($Env:RUNNER_OS -eq "Windows") {
-        $wslComposeFilePath = ConvertTo-WslPath $ComposeFilePath
-        Invoke-Wsl -CheckExitCode:$CheckExitCode -Command "docker compose -f '$wslComposeFilePath' $($Arguments -join ' ')"
-    }
-    else {
-        docker compose -f $ComposeFilePath @Arguments
-        if ($CheckExitCode -and $LASTEXITCODE -ne 0) {
-            throw "docker compose $($Arguments -join ' ') failed with exit code $LASTEXITCODE."
-        }
-    }
-}
-
 function Wait-ForEmulatorHealth {
     param(
         [string]$EmulatorHost,
@@ -230,6 +211,9 @@ function Setup-Emulator {
         throw "use-emulator requires Particular/setup-wsl-action to run first. It provisions WSL/Docker on Windows and exports WSL_IP and the WslTools module at WSL_TOOLS_MODULE_PATH."
     }
     Import-Module $Env:WSL_TOOLS_MODULE_PATH -Force
+    if (-not (Get-Command Invoke-DockerCompose -ErrorAction SilentlyContinue)) {
+        throw "use-emulator needs a newer Particular/setup-wsl-action: its WslTools module does not export Invoke-DockerCompose."
+    }
 
     $connectionHost = if ($emulatorHost) { $emulatorHost } else { $Env:WSL_IP }
     if (-not $connectionHost) {
