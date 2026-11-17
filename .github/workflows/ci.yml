@@ -45,7 +45,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Setup WSL
-        uses: Particular/setup-wsl-action@v1.2.0
+        uses: Particular/setup-wsl-action@v1.3.0
       - name: Azure login
         if: ${{ matrix.needs-azure-login == true }}
         uses: azure/login@v3.1.0
