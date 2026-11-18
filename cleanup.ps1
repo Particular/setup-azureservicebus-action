@@ -10,13 +10,8 @@ $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
 if ($useEmulator -eq "true") {
     if ($emulatorComposeFilePath -and (Test-Path $emulatorComposeFilePath)) {
         Write-Output "Stopping Azure Service Bus Emulator"
-        if ($Env:RUNNER_OS -eq "Windows") {
-            Import-Module $Env:WSL_TOOLS_MODULE_PATH -Force
-            Invoke-Wsl -Command "docker compose -f '$(ConvertTo-WslPath $emulatorComposeFilePath)' down"
-        }
-        else {
-            docker compose -f $emulatorComposeFilePath down
-        }
+        Import-Module $Env:WSL_TOOLS_MODULE_PATH -Force
+        Invoke-DockerCompose -ComposeFilePath $emulatorComposeFilePath -Arguments "down"
     }
 
     if ($emulatorAssetPath -and (Test-Path $emulatorAssetPath)) {
